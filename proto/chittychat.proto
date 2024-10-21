@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option go_package = "github.com/tcap/chittychat/proto";
+
+package chittychat;
+
+service ChittyChat {
+    // Cliente se une al chat
+    rpc Join(JoinRequest) returns (BroadcastMessage);
+
+    // Cliente publica un mensaje
+    rpc PublishMessage(PublishRequest) returns (Ack);
+
+    // Cliente se desconecta del chat
+    rpc Leave(LeaveRequest) returns (Ack);
+
+    // Stream bidireccional para recibir mensajes en tiempo real
+    rpc MessageStream(Empty) returns (stream BroadcastMessage);
+}
+
+message JoinRequest {
+    string participant_name = 1;
+}
+
+message LeaveRequest {
+    string participant_name = 1;
+}
+
+message PublishRequest {
+    string participant_name = 1;
+    string message = 2; // El mensaje tiene un límite de 128 caracteres
+    int64 lamport_time = 3; // Marca de tiempo lógica de Lamport
+}
+
+message BroadcastMessage {
+    string message = 1;
+    string participant_name = 2;
+    int64 lamport_time = 3; // Tiempo lógico de Lamport
+}
+
+message Ack {
+    bool success = 1;
+    string info = 2;
+}
+
+message Empty {}
