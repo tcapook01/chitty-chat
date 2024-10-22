@@ -9,6 +9,7 @@ import (
 	"os"
 	"sync"
 
+	gRPC "github.com/tcapook01/chitty-chat/proto"
 	"google.golang.org/grpc"
 )
 
@@ -76,7 +77,7 @@ func launchServer() {
 }
 
 // Handles message stream in the chat
-func (s *chatServer) MessageStream(stream gRPC.ChittyChat_MessageStreamServer) error {
+func (s *chatServer) MessageStream(empty *gRPC.Empty, stream gRPC.ChittyChat_MessageStreamServer) error {
 	for {
 		// Receive the next message from the stream
 		msg, err := stream.Recv()
