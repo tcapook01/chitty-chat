@@ -36,7 +36,7 @@ type ChittyChatClient interface {
 	// Cliente se desconecta del chat
 	Leave(ctx context.Context, in *LeaveRequest, opts ...grpc.CallOption) (*Ack, error)
 	// Stream bidireccional para recibir mensajes en tiempo real
-	MessageStream(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[BroadcastMessage], error)
+	MessageStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[BroadcastMessage, BroadcastMessage], error)
 }
 
 type chittyChatClient struct {
@@ -77,24 +77,18 @@ func (c *chittyChatClient) Leave(ctx context.Context, in *LeaveRequest, opts ...
 	return out, nil
 }
 
-func (c *chittyChatClient) MessageStream(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[BroadcastMessage], error) {
+func (c *chittyChatClient) MessageStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[BroadcastMessage, BroadcastMessage], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ChittyChat_ServiceDesc.Streams[0], ChittyChat_MessageStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[Empty, BroadcastMessage]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
+	x := &grpc.GenericClientStream[BroadcastMessage, BroadcastMessage]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ChittyChat_MessageStreamClient = grpc.ServerStreamingClient[BroadcastMessage]
+type ChittyChat_MessageStreamClient = grpc.BidiStreamingClient[BroadcastMessage, BroadcastMessage]
 
 // ChittyChatServer is the server API for ChittyChat service.
 // All implementations must embed UnimplementedChittyChatServer
@@ -107,7 +101,7 @@ type ChittyChatServer interface {
 	// Cliente se desconecta del chat
 	Leave(context.Context, *LeaveRequest) (*Ack, error)
 	// Stream bidireccional para recibir mensajes en tiempo real
-	MessageStream(*Empty, grpc.ServerStreamingServer[BroadcastMessage]) error
+	MessageStream(grpc.BidiStreamingServer[BroadcastMessage, BroadcastMessage]) error
 	mustEmbedUnimplementedChittyChatServer()
 }
 
@@ -127,7 +121,7 @@ func (UnimplementedChittyChatServer) PublishMessage(context.Context, *PublishReq
 func (UnimplementedChittyChatServer) Leave(context.Context, *LeaveRequest) (*Ack, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Leave not implemented")
 }
-func (UnimplementedChittyChatServer) MessageStream(*Empty, grpc.ServerStreamingServer[BroadcastMessage]) error {
+func (UnimplementedChittyChatServer) MessageStream(grpc.BidiStreamingServer[BroadcastMessage, BroadcastMessage]) error {
 	return status.Errorf(codes.Unimplemented, "method MessageStream not implemented")
 }
 func (UnimplementedChittyChatServer) mustEmbedUnimplementedChittyChatServer() {}
@@ -206,15 +200,11 @@ func _ChittyChat_Leave_Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 func _ChittyChat_MessageStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Empty)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ChittyChatServer).MessageStream(m, &grpc.GenericServerStream[Empty, BroadcastMessage]{ServerStream: stream})
+	return srv.(ChittyChatServer).MessageStream(&grpc.GenericServerStream[BroadcastMessage, BroadcastMessage]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ChittyChat_MessageStreamServer = grpc.ServerStreamingServer[BroadcastMessage]
+type ChittyChat_MessageStreamServer = grpc.BidiStreamingServer[BroadcastMessage, BroadcastMessage]
 
 // ChittyChat_ServiceDesc is the grpc.ServiceDesc for ChittyChat service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -241,6 +231,7 @@ var ChittyChat_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "MessageStream",
 			Handler:       _ChittyChat_MessageStream_Handler,
 			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "proto/chittychat.proto",

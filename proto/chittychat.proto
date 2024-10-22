@@ -15,7 +15,7 @@ service ChittyChat {
     rpc Leave(LeaveRequest) returns (Ack);
 
     // Stream bidireccional para recibir mensajes en tiempo real
-    rpc MessageStream(Empty) returns (stream BroadcastMessage);
+    rpc MessageStream(stream BroadcastMessage) returns (stream BroadcastMessage);
 }
 
 message JoinRequest {
