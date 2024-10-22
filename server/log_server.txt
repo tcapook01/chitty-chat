@@ -1,0 +1,8 @@
+2024/10/22 10:55:15 Server default attempting to listen on port 5400
+2024/10/22 10:55:15 Server default listening at 127.0.0.1:5400
+2024/10/22 10:55:55 Message from default: Participant default joined the chat at Lamport time 1
+2024/10/22 10:56:06 Message from default: holaaa at Lamport time 2
+2024/10/22 10:56:26 Message from default: Participant default joined the chat at Lamport time 3
+2024/10/22 10:56:30 Message from default: holaaa at Lamport time 4
+2024/10/22 10:56:38 Message from default: tuu at Lamport time 5
+2024/10/22 10:56:41 Message from default: que haces at Lamport time 6

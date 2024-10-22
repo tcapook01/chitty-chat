@@ -77,12 +77,12 @@ func launchServer() {
 }
 
 // Handles message stream in the chat
-func (s *chatServer) MessageStream(empty *gRPC.Empty, stream gRPC.ChittyChat_MessageStreamServer) error {
+func (s *chatServer) MessageStream(stream gRPC.ChittyChat_MessageStreamServer) error {
 	for {
 		// Receive the next message from the stream
 		msg, err := stream.Recv()
 		if err == io.EOF {
-			break
+			break // Stream has ended
 		}
 		if err != nil {
 			return err
@@ -93,7 +93,7 @@ func (s *chatServer) MessageStream(empty *gRPC.Empty, stream gRPC.ChittyChat_Mes
 		s.mutex.Unlock()
 
 		// If the message indicates a client joining
-		if msg.Content == "JOIN" {
+		if msg.Message == "JOIN" {
 			s.clients[msg.ParticipantName] = stream
 			s.clientIDs[msg.ParticipantName] = s.nextClientID
 			s.nextClientID++
@@ -110,7 +110,7 @@ func (s *chatServer) MessageStream(empty *gRPC.Empty, stream gRPC.ChittyChat_Mes
 		}
 
 		// If the message indicates a client leaving
-		if msg.Content == "LEAVE" {
+		if msg.Message == "LEAVE" {
 			leaveMsg := fmt.Sprintf("Participant %s left Chitty-Chat at Lamport time %d", msg.ParticipantName, s.lamportTime)
 			fmt.Println(leaveMsg)
 			log.Println(leaveMsg)
@@ -126,8 +126,8 @@ func (s *chatServer) MessageStream(empty *gRPC.Empty, stream gRPC.ChittyChat_Mes
 		}
 
 		// For regular chat messages
-		if msg.Content != "JOIN" && msg.Content != "LEAVE" {
-			chatMsg := fmt.Sprintf("Message from %s: %s at Lamport time %d", msg.ParticipantName, msg.Content, s.lamportTime)
+		if msg.Message != "JOIN" && msg.Message != "LEAVE" {
+			chatMsg := fmt.Sprintf("Message from %s: %s at Lamport time %d", msg.ParticipantName, msg.Message, s.lamportTime)
 			fmt.Println(chatMsg)
 			log.Println(chatMsg)
 
