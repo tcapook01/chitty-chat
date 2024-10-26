@@ -1,21 +1,21 @@
 syntax = "proto3";
 
-option go_package = "github.com/tcap/chittychat/proto";
+option go_package = "github.com/tcap/chitty-chat/proto";
 
 package chittychat;
 
 service ChittyChat {
-    // Cliente se une al chat
+    // Client joins the chat
     rpc Join(JoinRequest) returns (BroadcastMessage);
 
-    // Cliente publica un mensaje
+    // Client publishes a message
     rpc PublishMessage(PublishRequest) returns (Ack);
 
-    // Cliente se desconecta del chat
+    // Client leaves the chat
     rpc Leave(LeaveRequest) returns (Ack);
 
-    // Stream bidireccional para recibir mensajes en tiempo real
-    rpc MessageStream(stream BroadcastMessage) returns (stream BroadcastMessage);
+    // Bidirectional streaming RPC for real-time message exchange
+    rpc MessageStream(stream ClientMessage) returns (stream ServerMessage);
 }
 
 message JoinRequest {
@@ -28,14 +28,14 @@ message LeaveRequest {
 
 message PublishRequest {
     string participant_name = 1;
-    string message = 2; // El mensaje tiene un límite de 128 caracteres
-    int64 lamport_time = 3; // Marca de tiempo lógica de Lamport
+    string message = 2; // The message has a limit of 128 characters
+    int64 lamport_time = 3; // Lamport logical timestamp
 }
 
 message BroadcastMessage {
     string message = 1;
     string participant_name = 2;
-    int64 lamport_time = 3; // Tiempo lógico de Lamport
+    int64 lamport_time = 3; // Lamport logical timestamp
 }
 
 message Ack {
@@ -44,3 +44,19 @@ message Ack {
 }
 
 message Empty {}
+
+// Messages to handle different payloads in the stream
+message ClientMessage {
+    oneof payload {
+        JoinRequest join = 1;
+        PublishRequest publish = 2;
+        LeaveRequest leave = 3;
+    }
+}
+
+message ServerMessage {
+    oneof payload {
+        BroadcastMessage broadcast = 1;
+        Ack ack = 2;
+    }
+}

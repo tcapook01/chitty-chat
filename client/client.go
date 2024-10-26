@@ -9,180 +9,151 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	gRPC "github.com/tcapook01/chitty-chat/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Flags for user-specific arguments
-var clientName = flag.String("name", "default", "Sender's name")
-var serverPort = flag.String("server", "5400", "TCP server port")
-
-var serverConn *grpc.ClientConn      // Server connection
-var chatClient gRPC.ChittyChatClient // Chat server client
-var lamportTime int64 = 0            // Lamport timestamp
-
 func main() {
-	// Parse command-line flags
+	// Flags for user-specific arguments
+	name := flag.String("name", "default", "Participant name")
+	serverAddr := flag.String("server", "localhost:5400", "Server address")
 	flag.Parse()
 
 	fmt.Println("--- CLIENT APP ---")
 
-	// Set up logging to a file
-	logFile := setLog()
-	defer logFile.Close()
-
 	// Connect to the server
 	fmt.Println("--- Connecting to Server ---")
-	connectToServer()
-	defer serverConn.Close()
+	conn, err := grpc.Dial(*serverAddr, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("Failed to connect to server: %v", err)
+	}
+	defer conn.Close()
+	client := gRPC.NewChittyChatClient(conn)
 
 	// Create a bidirectional message stream
-	chatStream, err := chatClient.MessageStream(context.Background())
+	stream, err := client.MessageStream(context.Background())
 	if err != nil {
-		log.Fatalf("Error creating message stream: %v", err)
+		log.Fatalf("Failed to create message stream: %v", err)
 	}
 
-	// Send join message to the chat
-	sendJoinMessage(chatStream)
+	// Create a cancellable contex to manage goroutines
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	// Start listening for incoming messages in a goroutine
-	go listenForMessages(chatStream)
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-	// Start parsing user input
-	parseInput(chatStream)
-}
+	//Goroutine to receive messages from the server
+	go func() {
+		defer wg.Done()
+		for {
+			msg, err := stream.Recv()
+			if err == io.EOF {
+				fmt.Println("Server closed the stream")
+				cancel() // Cancel the context to signal sending goroutine to exit
+				return
+			}
+			if err != nil {
+				log.Printf("Failed to recieve the message: %v", err)
+				cancel() // Cancel the context to signal sending goroutine to exit
+				return
+			}
 
-// Function to connect to the server
-func connectToServer() {
-	opts := []grpc.DialOption{
-		grpc.WithBlock(),
-		grpc.WithTransportCredentials(insecure.NewCredentials()), // Insecure for local testing
-	}
-
-	var err error
-	serverConn, err = grpc.Dial(fmt.Sprintf("localhost:%s", *serverPort), opts...)
-	if err != nil {
-		log.Fatalf("Error connecting to server: %v", err)
-	}
-
-	chatClient = gRPC.NewChittyChatClient(serverConn)
-	fmt.Println("Connected to server.")
-}
-
-// Function to parse user input
-func parseInput(stream gRPC.ChittyChat_MessageStreamClient) {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Welcome to Chitty Chat!")
-	fmt.Println("--------------------------")
-
-	for {
-		fmt.Print("> ")
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			log.Fatalf("Error reading input: %v", err)
+			switch payload := msg.Payload.(type) {
+			case *gRPC.ServerMessage_Broadcast:
+				fmt.Printf("[%s] %s\n", payload.Broadcast.ParticipantName, payload.Broadcast.Message)
+			case *gRPC.ServerMessage_Ack:
+				fmt.Printf("[Ack] Success: %v, Info: %s\n", payload.Ack.Success, payload.Ack.Info)
+			default:
+				fmt.Println("Unknown message type received.")
+			}
 		}
-		input = strings.TrimSpace(input)
+	}()
 
-		if len(input) > 128 {
-			fmt.Println("Message is too long. It must be under 128 characters.")
-			continue
+	// Goroutine to send messages to the server
+	go func() {
+		defer wg.Done()
+
+		// Send JoinRequest
+		joinMsg := &gRPC.ClientMessage{
+			Payload: &gRPC.ClientMessage_Join{
+				Join: &gRPC.JoinRequest{
+					ParticipantName: *name,
+				},
+			},
 		}
-
-		if input == "exit" {
-			// Send leave message to the chat
-			sendLeaveMessage(stream)
-			os.Exit(0)
-		} else {
-			// Send message to the chat
-			sendChatMessage(input, stream)
-		}
-	}
-}
-
-// Function to set up the logger to write to a log file
-func setLog() *os.File {
-	logFileName := "log_" + *clientName + ".txt"
-	f, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("Error opening log file: %v", err)
-	}
-	log.SetOutput(f)
-	return f
-}
-
-// Function to send a join message to the server
-func sendJoinMessage(stream gRPC.ChittyChat_MessageStreamClient) {
-	joinMsg := &gRPC.BroadcastMessage{
-		Message:         fmt.Sprintf("Participant %s joined the chat", *clientName),
-		ParticipantName: *clientName,
-		LamportTime:     incrementLamport(),
-	}
-	if err := stream.Send(joinMsg); err != nil {
-		log.Fatalf("Error sending join message: %v", err)
-	}
-}
-
-// Function to send a leave message to the server
-func sendLeaveMessage(stream gRPC.ChittyChat_MessageStreamClient) {
-	leaveMsg := &gRPC.BroadcastMessage{
-		Message:         fmt.Sprintf("Participant %s left the chat", *clientName),
-		ParticipantName: *clientName,
-		LamportTime:     incrementLamport(),
-	}
-	if err := stream.Send(leaveMsg); err != nil {
-		log.Printf("Error sending leave message: %v", err)
-	}
-}
-
-// Function to send a chat message to the server
-func sendChatMessage(content string, stream gRPC.ChittyChat_MessageStreamClient) {
-	chatMsg := &gRPC.BroadcastMessage{
-		Message:         content,
-		ParticipantName: *clientName,
-		LamportTime:     incrementLamport(),
-	}
-	if err := stream.Send(chatMsg); err != nil {
-		log.Printf("Error sending message: %v", err)
-	}
-}
-
-// Function to listen for incoming messages from the server
-func listenForMessages(stream gRPC.ChittyChat_MessageStreamClient) {
-	for {
-		msg, err := stream.Recv()
-		if err == io.EOF {
-			log.Println("Stream closed by server.")
-			break
-		}
-		if err != nil {
-			log.Printf("Error receiving message: %v", err)
-			break
+		if err := stream.Send(joinMsg); err != nil {
+			log.Printf("Error sending join message: %v", err)
+			cancel()
+			return
 		}
 
-		// Update Lamport timestamp
-		updateLamport(msg.LamportTime)
+		// Read from stdin and send PublishRequest or LeaveRequest
+		scanner := bufio.NewScanner(os.Stdin)
+		for {
+			select {
+			case <-ctx.Done():
+				// Context canceled, exit the sending goroutine
+				return
+			default:
+			}
 
-		// Display and log the received message
-		if msg.Message != "" {
-			fmt.Printf("[%d] %s: \"%s\"\n", msg.LamportTime, msg.ParticipantName, msg.Message)
-			log.Printf("[%d] %s: \"%s\"\n", msg.LamportTime, msg.ParticipantName, msg.Message)
+			if !scanner.Scan() {
+				// Input closed (e.g., EOF), initiate graceful exit
+				leaveMsg := &gRPC.ClientMessage{
+					Payload: &gRPC.ClientMessage_Leave{
+						Leave: &gRPC.LeaveRequest{
+							ParticipantName: *name,
+						},
+					},
+				}
+				if err := stream.Send(leaveMsg); err != nil {
+					log.Printf("Error sending leave message: %v", err)
+				}
+				fmt.Println("Exiting chat. Goodbye!")
+				stream.CloseSend()
+				cancel() // Cancel context to signal receiving goroutine to exit
+				return
+			}
+
+			text := scanner.Text()
+			if strings.ToUpper(text) == "EXIT" {
+				// Send LeaveRequest
+				leaveMsg := &gRPC.ClientMessage{
+					Payload: &gRPC.ClientMessage_Leave{
+						Leave: &gRPC.LeaveRequest{
+							ParticipantName: *name,
+						},
+					},
+				}
+				if err := stream.Send(leaveMsg); err != nil {
+					log.Printf("Error sending leave message: %v", err)
+				}
+				fmt.Println("Exiting chat. Goodbye!")
+				stream.CloseSend()
+				cancel() // Cancel context to signal receiving goroutine to exit
+				return
+			}
+
+			// Send PublishRequest
+			publishMsg := &gRPC.ClientMessage{
+				Payload: &gRPC.ClientMessage_Publish{
+					Publish: &gRPC.PublishRequest{
+						ParticipantName: *name,
+						Message:         text,
+						LamportTime:     0, // The server will handle Lamport time
+					},
+				},
+			}
+			if err := stream.Send(publishMsg); err != nil {
+				log.Printf("Error sending publish message: %v", err)
+				cancel()
+				return
+			}
 		}
-	}
-}
+	}()
 
-// Function to increment Lamport timestamp when sending a message
-func incrementLamport() int64 {
-	lamportTime++
-	return lamportTime
-}
-
-// Function to update Lamport timestamp when receiving a message
-func updateLamport(received int64) {
-	if received > lamportTime {
-		lamportTime = received + 1
-	} else {
-		lamportTime++
-	}
+	wg.Wait()
 }
