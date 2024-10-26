@@ -32,6 +32,14 @@ func main() {
 	defer conn.Close()
 	client := gRPC.NewChittyChatClient(conn)
 
+	// Set up client logging
+	logFile, err := os.OpenFile("client_log.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Failed to open log file: %v", err)
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
+
 	// Create a bidirectional message stream
 	stream, err := client.MessageStream(context.Background())
 	if err != nil {
@@ -63,10 +71,13 @@ func main() {
 
 			switch payload := msg.Payload.(type) {
 			case *gRPC.ServerMessage_Broadcast:
+				log.Printf("[%s] %s\n", payload.Broadcast.ParticipantName, payload.Broadcast.Message)
 				fmt.Printf("[%s] %s\n", payload.Broadcast.ParticipantName, payload.Broadcast.Message)
 			case *gRPC.ServerMessage_Ack:
+				log.Printf("[Ack] Success: %v, Info: %s\n", payload.Ack.Success, payload.Ack.Info)
 				fmt.Printf("[Ack] Success: %v, Info: %s\n", payload.Ack.Success, payload.Ack.Info)
 			default:
+				log.Println("Unknown message type received.")
 				fmt.Println("Unknown message type received.")
 			}
 		}
