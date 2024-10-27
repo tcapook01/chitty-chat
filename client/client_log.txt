@@ -1,24 +1,15 @@
-2024/10/26 23:23:19 [Alice] Participant Alice joined Chitty-Chat at Lamport time 0
-2024/10/26 23:23:30 [ice] Participant ice joined Chitty-Chat at Lamport time 0
-2024/10/26 23:23:30 [ice] Participant ice joined Chitty-Chat at Lamport time 0
-2024/10/26 23:23:32 [ice] Message from ice: hi at Lamport time 1
-2024/10/26 23:23:32 [ice] Message from ice: hi at Lamport time 1
-2024/10/26 23:23:36 [Alice] Message from Alice: hey at Lamport time 2
-2024/10/26 23:23:36 [Alice] Message from Alice: hey at Lamport time 2
-2024/10/27 10:45:07 Failed to recieve the message: rpc error: code = Unavailable desc = closing transport due to: connection error: desc = "error reading from server: EOF", received prior goaway: code: NO_ERROR, debug data: "graceful_stop"
-2024/10/27 10:45:07 Failed to recieve the message: rpc error: code = Unavailable desc = closing transport due to: connection error: desc = "error reading from server: EOF", received prior goaway: code: NO_ERROR, debug data: "graceful_stop"
-2024/10/27 10:45:49 [Sofia] Participant Sofia joined Chitty-Chat at Lamport time 0
-2024/10/27 10:46:04 [Vicki] Participant Vicki joined Chitty-Chat at Lamport time 0
-2024/10/27 10:46:04 [Vicki] Participant Vicki joined Chitty-Chat at Lamport time 0
-2024/10/27 10:46:18 [Tomas] Participant Tomas joined Chitty-Chat at Lamport time 0
-2024/10/27 10:46:18 [Tomas] Participant Tomas joined Chitty-Chat at Lamport time 0
-2024/10/27 10:46:18 [Tomas] Participant Tomas joined Chitty-Chat at Lamport time 0
-2024/10/27 10:46:24 [Sofia] Message from Sofia: Hi! at Lamport time 1
-2024/10/27 10:46:24 [Sofia] Message from Sofia: Hi! at Lamport time 1
-2024/10/27 10:46:24 [Sofia] Message from Sofia: Hi! at Lamport time 1
-2024/10/27 10:46:33 [Vicki] Message from Vicki: Hey everyone! at Lamport time 2
-2024/10/27 10:46:33 [Vicki] Message from Vicki: Hey everyone! at Lamport time 2
-2024/10/27 10:46:33 [Vicki] Message from Vicki: Hey everyone! at Lamport time 2
-2024/10/27 10:46:49 [Tomas] Message from Tomas: Hi, How are you? at Lamport time 3
-2024/10/27 10:46:49 [Tomas] Message from Tomas: Hi, How are you? at Lamport time 3
-2024/10/27 10:46:49 [Tomas] Message from Tomas: Hi, How are you? at Lamport time 3
+2024/10/27 10:56:09 [Sofia] Participant Sofia joined Chitty-Chat at Lamport time 0
+2024/10/27 10:56:37 [Vicki] Participant Vicki joined Chitty-Chat at Lamport time 0
+2024/10/27 10:56:37 [Vicki] Participant Vicki joined Chitty-Chat at Lamport time 0
+2024/10/27 10:57:05 [Tomas] Participant Tomas joined Chitty-Chat at Lamport time 0
+2024/10/27 10:57:05 [Tomas] Participant Tomas joined Chitty-Chat at Lamport time 0
+2024/10/27 10:57:05 [Tomas] Participant Tomas joined Chitty-Chat at Lamport time 0
+2024/10/27 10:57:07 [Tomas] Message from Tomas: hi at Lamport time 1
+2024/10/27 10:57:07 [Tomas] Message from Tomas: hi at Lamport time 1
+2024/10/27 10:57:07 [Tomas] Message from Tomas: hi at Lamport time 1
+2024/10/27 10:57:12 [Vicki] Message from Vicki: Hey! at Lamport time 2
+2024/10/27 10:57:12 [Vicki] Message from Vicki: Hey! at Lamport time 2
+2024/10/27 10:57:12 [Vicki] Message from Vicki: Hey! at Lamport time 2
+2024/10/27 10:57:24 [Sofia] Message from Sofia: Hi everyone! at Lamport time 3
+2024/10/27 10:57:24 [Sofia] Message from Sofia: Hi everyone! at Lamport time 3
+2024/10/27 10:57:24 [Sofia] Message from Sofia: Hi everyone! at Lamport time 3
