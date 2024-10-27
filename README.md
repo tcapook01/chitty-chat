@@ -5,11 +5,17 @@ Demonstrate that the system can be started with at least 3 client nodes:
 
 How to run the Chitty-Chat system:
 
-- cd server 
+```
+cd server
+```
 
-- go build server.go
+```
+go build server.go
+```
 
-- ./server --name=Server1 --port=5400 
+```
+./server --name=Server1 --port=5400
+```
 
 
 
@@ -17,12 +23,17 @@ New terminal (One for the server and one for each of the clients)
 
 Do this three times with different names (example: Sofia, Tomas, and Vicki):
 
-- cd client
+```
+cd client
+```
 
-- go build client.go
+```
+go build client.go
+```
 
-- ./client --name=Sofia --server=localhost:5400
-
+```
+./client --name=Sofia --server=localhost:5400
+```
 
 Server terminal:
 Participant Sofia joined Chitty-Chat at Lamport time 0
